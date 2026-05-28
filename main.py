@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -134,7 +134,16 @@ def atualizar_foco(foco_id: int, foco_atualizado: FocoQueimadaCreate):
 @app.delete("/focos/{foco_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Focos de Queimada"])
 def deletar_foco(foco_id: int):
     for index, foco in enumerate(db_focos):
-        if foco.id == foco_id:
+        # 1. Extrai o ID de forma segura (funciona se for dicionário OU objeto Pydantic)
+        if isinstance(foco, dict):
+            id_atual = foco.get("id")
+        else:
+            id_atual = getattr(foco, "id", None)
+        
+        # 2. Compara os IDs convertendo ambos para int (evita erro de str vs int)
+        if id_atual is not None and int(id_atual) == int(foco_id):
             db_focos.pop(index)
-            return
+            # Retorna uma resposta 204 No Content explícita, ideal para o Fetch do celular
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+            
     raise HTTPException(status_code=404, detail="Foco de queimada não encontrado para exclusão.")
