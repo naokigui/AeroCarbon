@@ -134,16 +134,11 @@ def atualizar_foco(foco_id: int, foco_atualizado: FocoQueimadaCreate):
 @app.delete("/focos/{foco_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Focos de Queimada"])
 def deletar_foco(foco_id: int):
     for index, foco in enumerate(db_focos):
-        # 1. Extrai o ID de forma segura (funciona se for dicionário OU objeto Pydantic)
-        if isinstance(foco, dict):
-            id_atual = foco.get("id")
-        else:
-            id_atual = getattr(foco, "id", None)
-        
-        # 2. Compara os IDs convertendo ambos para int (evita erro de str vs int)
-        if id_atual is not None and int(id_atual) == int(foco_id):
+        # Conversão preventiva para int garante que a comparação nunca falhe por tipo de dado
+        if int(foco.id) == int(foco_id):
             db_focos.pop(index)
-            # Retorna uma resposta 204 No Content explícita, ideal para o Fetch do celular
+            
+            # RETORNO CORRETO: Envia uma resposta HTTP 204 limpa e sem corpo
             return Response(status_code=status.HTTP_204_NO_CONTENT)
             
     raise HTTPException(status_code=404, detail="Foco de queimada não encontrado para exclusão.")
