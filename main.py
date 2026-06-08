@@ -28,6 +28,14 @@ class FocoQueimada(BaseModel):
     carbono_estimado: float = Field(..., example=85.2) # Em toneladas de CO2
     status: str = Field(default="Ativo", example="Ativo") # Ativo / Resolvido
 
+class FocoQueimadaUpdate(BaseModel):
+    regiao: Optional[str] = Field(None, example="Pantanal - Corumbá")
+    latitude: Optional[float] = Field(None, example=-19.0031)
+    longitude: Optional[float] = Field(None, example=-57.6536)
+    nivel_risco: Optional[str] = Field(None, example="Crítico")
+    carbono_estimado: Optional[float] = Field(None, example=85.2)
+    status: Optional[str] = Field(None, example="Ativo")
+
 # 2. BANCO DE DADOS EM MEMÓRIA
 db_focos: List[FocoQueimada] = [
     FocoQueimada(id=1, regiao="Pantanal - Corumbá", latitude=-19.0031, longitude=-57.6536, nivel_risco="Alto", carbono_estimado=85.2, status="Ativo"),
@@ -54,6 +62,16 @@ def criar_foco(foco: FocoQueimada):
         raise HTTPException(status_code=400, detail="Já existe um registro com este ID.")
     db_focos.append(foco)
     return foco
+
+# PUT - Atualizar um foco existente
+@app.put("/focos/{foco_id}", response_model=FocoQueimada, tags=["Focos de Queimada"])
+def atualizar_foco(foco_id: int, dados: FocoQueimadaUpdate):
+    for index, foco in enumerate(db_focos):
+        if foco.id == foco_id:
+            atualizado = foco.model_copy(update=dados.model_dump(exclude_none=True))
+            db_focos[index] = atualizado
+            return atualizado
+    raise HTTPException(status_code=404, detail="Foco de queimada não encontrado.")
 
 # DELETE
 @app.delete("/focos/{foco_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Focos de Queimada"])
